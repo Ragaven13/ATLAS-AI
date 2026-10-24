@@ -155,5 +155,29 @@ invalid_delivery = orders_df.filter(
     
 )
 
-print("\nOrders delivered before purchase:")
-print(invalid_delivery.height)
+# print("\nOrders delivered before purchase:")
+# print(invalid_delivery.height)
+
+
+# Empty String Validation
+
+string_columns = [
+
+    column
+    for column,dtype in orders_df.schema.items()
+    if dtype == pl.String
+]
+
+empty_values = orders_df.select(
+    [
+        pl.col(column)
+        .str.strip_chars()
+        .eq(" ")
+        .sum()
+        .alias(column)
+        for column in string_columns
+    ]
+)
+
+print("\n Empty String Validation:")
+print(empty_values)
