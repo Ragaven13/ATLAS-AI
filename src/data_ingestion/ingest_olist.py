@@ -1,3 +1,4 @@
+from polars.datatypes import group
 from pathlib import Path
 import polars as pl
 
@@ -22,25 +23,66 @@ orders_path = RAW_DATA / "olist_orders_dataset.csv"
 
 orders_df = pl.read_csv(orders_path)
 
-# Print first 5 rows
-print("\n First 5 rows:")
-print(orders_df.head())
+# # Print first 5 rows
+# print("\n First 5 rows:")
+# print(orders_df.head())
 
 
-# Inspect the DataFrame
-print("\n Dataset shape:")
-print(orders_df.shape)
+# # Inspect the DataFrame
+# print("\n Dataset shape:")
+# print(orders_df.shape)
 
-# Print column names
-print("\n Column names:")
-print(orders_df.columns)
+# # Print column names
+# print("\n Column names:")
+# print(orders_df.columns)
 
-# Inspect data types
-print("\n Dataset schemas:")
-print(orders_df.schema)
+# # Inspect data types
+# print("\n Dataset schemas:")
+# print(orders_df.schema)
 
-# count missing values
-print("\n Missing values:")
-print(orders_df.null_count())
+# # count missing values
+# print("\n Missing values:")
+# print(orders_df.null_count())
+
+# # count unique order ID's
+
+# unique_orders = orders_df['order_id'].n_unique()
+
+# # Calculate duplicate count
+# duplicate_count = orders_df.height - unique_orders
+
+# print("Total Orders:", orders_df.height)
+# print("Unique Orders:", unique_orders)
+# print("Duplicate Orders:", duplicate_count)
 
 
+# Order-status distribution
+status_distribution= (
+    orders_df
+    .group_by("order_status")
+    .agg(
+        pl.len().alias("order_count")
+    )
+    .sort("order_count", descending=True)
+)
+
+print("\n Order-status distribution:")
+print(status_distribution)
+
+
+missing_delivery_by_status = (
+    orders_df
+    .group_by("order_status")
+    .agg(
+        pl.len().alias("total_orders"),
+        pl.col("order_delivered_customer_date")
+        .is_null()
+        .sum()
+        .alias("missing_delivery_dates")
+        
+    )
+    .sort("missing_delivery_dates", descending=True)
+)
+
+print("\n Missing delivery dates by status:")
+print(missing_delivery_by_status)
