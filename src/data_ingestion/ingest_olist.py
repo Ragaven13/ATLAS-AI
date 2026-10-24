@@ -1,3 +1,4 @@
+from numpy.lib import stride_tricks
 from polars.datatypes import group
 from pathlib import Path
 import polars as pl
@@ -66,8 +67,8 @@ status_distribution= (
     .sort("order_count", descending=True)
 )
 
-print("\n Order-status distribution:")
-print(status_distribution)
+# print("\n Order-status distribution:")
+# print(status_distribution)
 
 
 missing_delivery_by_status = (
@@ -84,5 +85,75 @@ missing_delivery_by_status = (
     .sort("missing_delivery_dates", descending=True)
 )
 
-print("\n Missing delivery dates by status:")
-print(missing_delivery_by_status)
+# print("\n Missing delivery dates by status:")
+# print(missing_delivery_by_status)
+
+# Timestamp Validation
+
+
+purchase_date_range = orders_df.select(
+
+    pl.col("order_purchase_timestamp").min()
+    .alias("earliest_timestamp"),
+    pl.col("order_purchase_timestamp").max()
+    .alias("latest_timestamp")
+)
+
+# print("\n Purchase date range:")
+# print(purchase_date_range)
+
+
+timestamp_columns = [
+    "order_purchase_timestamp",
+    "order_approved_at",
+    "order_delivered_carrier_date",
+    "order_delivered_customer_date",
+    "order_estimated_delivery_date",
+]
+
+orders_typed_df = orders_df.with_columns(
+    
+    [
+        pl.col(column)
+        .str.strptime(
+            pl.Datetime,
+            format="%Y-%m-%d %H:%M:%S",
+            strict=False
+        ).alias(column)
+        for column in timestamp_columns
+    ]
+)
+
+# print("\nUpdated Schema:")
+# print(orders_typed_df.schema)
+
+
+for column in timestamp_columns:
+    orginal_nulls = orders_df[column].null_count()
+    converted_nulls = orders_typed_df[column].null_count()
+    
+    
+    parsing_failures = orginal_nulls - converted_nulls
+    
+    # print(f"{column}:{parsing_failures} parsing failures")
+    
+
+# Detect invalid delivery sequences
+
+"""
+identify orders where:
+
+order_delivered_customer_date is earlier than order_purchase_timestamp.
+"""
+
+invalid_delivery = orders_df.filter(
+    pl.col("order_delivered_customer_date").is_not_null()
+    & (
+        pl.col("order_delivered_customer_date")
+        < pl.col("order_purchase_timestamp")
+    )
+    
+)
+
+print("\nOrders delivered before purchase:")
+print(invalid_delivery.height)
