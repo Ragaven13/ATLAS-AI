@@ -1,7 +1,10 @@
-from numpy.lib import stride_tricks
+# from numpy.lib import stride_tricks
+# from polars._utils.deprecation import P
 from polars.datatypes import group
 from pathlib import Path
 import polars as pl
+# pyrefly: ignore[missing-import]
+from src.data_ingestion.bronze_writer import write_bronze
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -179,5 +182,21 @@ empty_values = orders_df.select(
     ]
 )
 
-print("\n Empty String Validation:")
-print(empty_values)
+# print("\n Empty String Validation:")
+# print(empty_values)
+
+
+
+# DEFINE Bronze 
+BRONZE_DIR = PROJECT_ROOT / "data" / "bronze" / "olist"
+
+# Define paraquete destination
+orders_output_path = BRONZE_DIR / "orders.parquet"
+
+written_path = write_bronze(
+    df = orders_df,
+    output_path = orders_output_path
+
+)
+
+print("Bronze file created: ", written_path)
